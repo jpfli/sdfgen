@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distance Transform App</title>
+  <!-- Include Trongate CSS -->
+  <link rel="stylesheet" href="css/trongate.css">
+  <style>
+    div.stage {
+      background-color: #ddd;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
+    }
+    canvas {
+      height: 240px;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <div class="container fill-page">
+    <h2>Signed Distance Field Generator for Mad Mobiles</h2>
+
+    <div class="stage">
+      <p>
+        <label>Source Image</label>
+        <input type="file" id="file-input" accept="image/*" onclick="this.value = null;" hidden>
+        <label id="file-button" for="file-input" class="button">Choose...</label>
+      </p>
+      <p><canvas id="input-canvas"></canvas></p>
+    </div>
+
+    <br>
+
+    <div class="stage">
+      <!-- Input field for specifying the distance range -->
+      <label>Distance Range [px]</label>
+      <input type="number" id="range" value="32" placeholder="Distance Range">
+      <!-- Button for generating the SDF -->
+      <button id="generate-button">Generate SDF</button>
+      <!-- Button for copying the SDF values to clipboard -->
+      <button id="copy-button">Copy to Clipboard</button>
+      <!-- Canvas for displaying the SDF -->
+      <p><canvas id="sdf-canvas"></canvas></p>
+      <!-- Canvas for displaying the final low resolution SDF -->
+      <p><canvas id="result-canvas"></canvas></p>
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
+
