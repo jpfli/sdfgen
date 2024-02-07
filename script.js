@@ -1,37 +1,58 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.getElementById('file-input');
-    const generateButton = document.getElementById('generate-button');
+    const file_input = document.getElementById('file-input');
+    const generate_button = document.getElementById('generate-button');
+    const copy_button = document.getElementById("copy-button");
+    const radios = document.getElementsByName('formatting');
+
     const expectedWidth = 688;
     const expectedHeight = 688;
 
     let range = 0;
+    let image_sdf = [];
     let final_sdf = [];
+    let textarea_formatting = "decimal";
 
-    fileInput.addEventListener('change', (event) => {
+    file_input.addEventListener('change', (event) => {
         const file = event.target.files[0];
         const reader = new FileReader();
 
         reader.onload = function() {
             const img = new Image();
             img.onload = function() {
+                let input_canvas = document.getElementById('input-canvas');
+
                 if(img.width % 16 != 0 || ((img.width / 16) & 1) == 0 || img.height % 16 != 0 || ((img.height / 16) & 1) == 0) {
+                    //input_canvas.hidden = true;
+                    //document.getElementById('generate-button').hidden = true;
+                    //document.getElementById('load-button').textContent = "Choose...";
+
                     alert("Error: Image dimensions must be 16 multiplied by odd numbers. For example 688px (43x16). Please adjust and try again.");
                     return;
                 }
-                document.getElementById('file-button').textContent = file.name; //fileInput.files[0].name;
 
-                const input_canvas = document.getElementById('input-canvas');
+                image_sdf = [];
+                final_sdf = [];
+
+                generate_button.disabled = false;
+                document.getElementById('sdf-canvas').hidden = true;
+                document.getElementById('result-canvas').hidden = true;
+                document.getElementById('textarea-div').textContent = "";
+
                 input_canvas.width = img.width;
                 input_canvas.height = img.height;
                 const ctx = input_canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
+
+                input_canvas.hidden = false;
+
+                document.getElementById('load-button').textContent = file.name;
             }
             img.src = reader.result;
         }
         reader.readAsDataURL(file);
     });
 
-    generateButton.addEventListener('click', () => {
+    generate_button.addEventListener('click', () => {
         const input_canvas = document.getElementById('input-canvas');
         let ctx = input_canvas.getContext('2d');
 
@@ -45,42 +66,84 @@ document.addEventListener('DOMContentLoaded', () => {
         if(range <= 0) range = Math.max(...sdf.map(row => Math.max(...row.map(p => Math.abs(p)))));
 
         // Convert SDF values to unsigned 8 bit
-        const sdf_bitmap = sdf.map(sub => sub.map(item => Math.max(0, Math.min(255, Math.round(128 + item * 127 / range)))));
+        image_sdf = sdf.map(sub => sub.map(item => Math.max(0, Math.min(255, Math.round(128 + item * 127 / range)))));
 
-        let image = array_to_image(sdf_bitmap);
+        let image = array_to_image(image_sdf);
 
-        draw_image(image, document.getElementById('sdf-canvas'))
+        let sdf_canvas = document.getElementById('sdf-canvas');
+        sdf_canvas.hidden = false;
+
+        draw_image(image, sdf_canvas);
 
         image = scale_image(image, 1.0 / 16);
-        final_sdf = image_to_array(image)
+        final_sdf = image_to_array(image);
 
         // Convert values from unsigned to signed
         final_sdf = final_sdf.map(sub => sub.map(item => Math.max(-127, Math.min(127, Math.round(item - 128)))));
 
-        draw_image(image, document.getElementById('result-canvas'));
+        document.getElementById('copy-button').hidden = false;
+        let result_canvas = document.getElementById('result-canvas');
+        result_canvas.hidden = false;
+
+        draw_image(image, result_canvas);
+
+        let formatting = 0;
+        // Loop through the radio buttons
+        for(let i = 0; i < radios.length; ++i) {
+            if (radios[i].checked) {
+                formatting = i;
+                break; // Exit the loop once the selected radio is found
+            }
+        }
+
+        copy_sdf_to_textarea();
     });
 
     // Event listener for copy to clipboard button
-    document.getElementById("copy-button").addEventListener("click", function() {
+    copy_button.addEventListener("click", function() {
         if(final_sdf.length == 0) {
             alert("You must first generate the SDF");
             return;
         }
-        //text = final_sdf.map(row => row.map(value => (value < 0 ? '-' : '') + '0x' + Math.abs(value).toString(16).padStart(2, '0')).join(',')).join(',\n');
-        text = "// width:" + final_sdf[0].length + ", height:" + final_sdf.length + ", range:" + range + "\n";
-        text += final_sdf.map(row => row.join(',')).join(',\n');
-        copy_to_clipboard(text);
-    });
 
-    // Function to copy CSV data to clipboard
-    function copy_to_clipboard(text) {
-        navigator.clipboard.writeText(text)
+        let textarea_div = document.getElementById('textarea-div');
+
+        // Copy textarea content to clipboard
+        navigator.clipboard.writeText(textarea_div.textContent)
             .then(() => {
-                alert("SDF values copied to clipboard");
+                // Temporarily change the button text to "Copied"
+                copy_button.textContent = 'Copied';
             })
             .catch(err => {
                 console.error('Failed to copy: ', err);
             });
+
+        // Revert the button text back after  3 seconds
+        setTimeout(function() {
+          copy_button.textContent = 'Copy';
+        },  3000);
+    });
+
+    radios.forEach(function(radio) { radio.addEventListener("change", (event) => {
+            textarea_formatting = event.target.value;
+
+            copy_sdf_to_textarea();
+        });
+    });
+
+    function copy_sdf_to_textarea() {
+        if(final_sdf.length == 0) {
+            return;
+        }
+
+        let textarea_div = document.getElementById('textarea-div');
+        textarea_div.textContent = "// width: " + final_sdf[0].length + "; height: " + final_sdf.length + "; range: " + range + ";\n";
+        if(textarea_formatting == "decimal") {
+            textarea_div.textContent += final_sdf.map(row => row.join(',')).join(',\n');
+        }
+        else if(textarea_formatting == "int8") {
+            textarea_div.textContent += final_sdf.map(row => row.map(v => "0x" + (v & 0xff).toString(16).padStart(2, '0')).join(',')).join(',\n');
+        }
     }
 
     function draw_image(image_data, canvas) {
@@ -244,6 +307,5 @@ document.addEventListener('DOMContentLoaded', () => {
     function edt_sep(i, u, g_i, g_u) {
         return Math.floor((u * u - i * i + g_u * g_u - g_i * g_i) / (2 * (u - i)));
     }
-
 });
 

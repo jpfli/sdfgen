@@ -3,52 +3,157 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Distance Transform App</title>
+  <title>Signed Distance Field Generator for Mad Mobiles</title>
+
   <!-- Include Trongate CSS -->
   <link rel="stylesheet" href="css/trongate.css">
+
   <style>
-    div.stage {
-      background-color: #ddd;
-      padding: 0.6em 1.2em;
-      border-radius: 6px;
-    }
-    canvas {
-      height: 240px;
-      image-rendering: pixelated;
-    }
+  .tab {
+    overflow: hidden;
+    border-radius: 6px 6px 0 0;
+    background-color: #ddd;
+  }
+  .tab button {
+    color: #000;
+    background-color: inherit;
+    font-size: 1.1em;
+    float: left;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    margin: 0;
+    padding: 14px 16px;
+    transition: 0.3s;
+  }
+  .tab button:hover {
+    background-color: #ccc;
+  }
+  .tab button.active {
+    background-color: #eee;
+  }
+  .tab-container {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    background-color: #eee;
+    animation: fadeEffect 0.5s; /* Fading effect takes 1 second */
+  }
+  .active-tab {
+    display: block;
+  }
+
+  canvas {
+    height: 240px;
+    image-rendering: pixelated;
+  }
+
+  input[type="radio"] {
+    margin: 0 0.5em 0 1.5em;
+  }
+  .copy-container {
+    position: relative;
+    color: #eee;
+    background: #223;
+  }
+  .copy-textarea {
+    height: 240px;
+    overflow: auto;
+    margin: 0;
+    font-size: 60%;
+  }
+  .copy-container button{
+    position: absolute;
+    top: 0;
+    right: 24px;
+  }
+
+  /* Go from zero to full opacity */
+  @keyframes fadeEffect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
   </style>
 </head>
+
 <body>
   <div class="container fill-page">
+
     <h2>Signed Distance Field Generator for Mad Mobiles</h2>
 
-    <div class="stage">
-      <p>
-        <label>Source Image</label>
-        <input type="file" id="file-input" accept="image/*" onclick="this.value = null;" hidden>
-        <label id="file-button" for="file-input" class="button">Choose...</label>
-      </p>
-      <p><canvas id="input-canvas"></canvas></p>
+    <!-- Tab buttons -->
+    <div class="tab">
+      <button id="tab-1-button" class="tab-button active" onclick="openTab(event, 'tab1')">Upload Image</button>
+      <button id="tab-2-button" class="tab-button" onclick="openTab(event, 'tab2')">Generate SDF</button>
+      <button id="tab-3-button" class="tab-button" onclick="openTab(event, 'tab3')">Export</button>
     </div>
 
-    <br>
-
-    <div class="stage">
-      <!-- Input field for specifying the distance range -->
-      <label>Distance Range [px]</label>
-      <input type="number" id="range" value="32" placeholder="Distance Range">
-      <!-- Button for generating the SDF -->
-      <button id="generate-button">Generate SDF</button>
-      <!-- Button for copying the SDF values to clipboard -->
-      <button id="copy-button">Copy to Clipboard</button>
-      <!-- Canvas for displaying the SDF -->
-      <p><canvas id="sdf-canvas"></canvas></p>
-      <!-- Canvas for displaying the final low resolution SDF -->
-      <p><canvas id="result-canvas"></canvas></p>
+    <!-- Tab content -->
+    <div id="tab1" class="tab-container active-tab">
+        <p><canvas id="input-canvas" hidden /></p>
+        <p>
+          <label style="display: inline; margin-right: 1em;">Source image</label>
+          <input type="file" id="file-input" accept="image/*" onclick="this.value = null;" hidden />
+          <label id="load-button" for="file-input" class="button">Choose...</label>
+        </p>
     </div>
+    <div id="tab2" class="tab-container">
+        <!-- Canvas for displaying the SDF -->
+        <p><canvas id="sdf-canvas" hidden></canvas></p>
 
+        <!-- Input field for specifying the distance range -->
+        <label style="float: left; margin-right: 1em;">Distance Range [px]</label>
+        <input type="number" id="range" value="32" placeholder="Distance Range" />
+
+        <!-- Button for generating the SDF -->
+        <p><button id="generate-button" disabled>Generate</button></p>
+    </div>
+    <div id="tab3" class="tab-container">
+        <!-- Canvas for displaying the final low resolution SDF -->
+        <p><canvas id="result-canvas" hidden></canvas></p>
+
+        <p>
+          <label>Formatting</label>
+          <span><input type="radio" name="formatting" value="decimal" checked>Decimal</span>
+          <span><input type="radio" name="formatting" value="int8">Signed 8-bit hexadecimal</span>
+        </p>
+
+        <p>
+          <div class="copy-container">
+            <!-- Button for copying the SDF values to clipboard -->
+            <button id="copy-button">Copy</button>
+            <pre id="textarea-div" class="copy-textarea" />
+          </div>
+        </p>
+    </div>
   </div>
+
+  <script>
+  // Function to open a specific tab
+  function openTab(event, tab_name) {
+    // Get all elements with class="tab-content" and hide them
+    let tab_content = document.getElementsByClassName("tab-container");
+    for(let i = 0; i < tab_content.length; ++i) {
+      tab_content[i].style.display = "none";
+    }
+
+    // Get all elements with class="tab-button" and remove the class "active"
+    tab_buttons = document.getElementsByClassName("tab-button");
+    for(let i = 0; i < tab_buttons.length; ++i) {
+      tab_buttons[i].className = tab_buttons[i].className.replace(" active", "");
+    }
+
+    // Show the current tab, and add an "active-tab" class to the button that opened the tab
+    document.getElementById(tab_name).style.display = "block";
+    event.currentTarget.className += " active";
+  }
+  </script>
+
   <script src="script.js"></script>
+
 </body>
 </html>
 
