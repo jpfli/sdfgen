@@ -142,6 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea_div.textContent += final_sdf.map(row => row.join(',')).join(',\n');
         }
         else if(textarea_formatting == "int8") {
+            textarea_div.textContent += final_sdf.map(row => row.map(v => (v < 0 ? "-0x" : " 0x") + Math.abs(((v + 128) & 0xff) - 128).toString(16).padStart(2, '0')).join(',')).join(',\n');
+        }
+        else if(textarea_formatting == "uint8") {
             textarea_div.textContent += final_sdf.map(row => row.map(v => "0x" + (v & 0xff).toString(16).padStart(2, '0')).join(',')).join(',\n');
         }
     }

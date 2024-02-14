@@ -40,7 +40,7 @@
     border-top: none;
     border-radius: 0 0 6px 6px;
     background-color: #eee;
-    animation: fadeEffect 0.5s; /* Fading effect takes 0.5 second */
+    animation: fadeEffect 0.5s; /* Fading effect takes 0.5 seconds */
   }
   .active-tab {
     display: block;
@@ -69,6 +69,7 @@
     position: absolute;
     top: 0;
     right: 24px;
+    min-width: 85px;
   }
 
   /* Go from zero to full opacity */
@@ -119,6 +120,7 @@
           <label>Formatting</label>
           <span><input type="radio" name="formatting" value="decimal" checked>Decimal</span>
           <span><input type="radio" name="formatting" value="int8">Signed 8-bit hexadecimal</span>
+          <span><input type="radio" name="formatting" value="uint8">Unsigned 8-bit hexadecimal</span>
         </p>
 
         <p>
